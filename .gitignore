@@ -1,0 +1,8 @@
+# Build artifacts
+*.o
+aes_test
+
+# OS generated files
+.DS_Store
+*.swp
+*~
