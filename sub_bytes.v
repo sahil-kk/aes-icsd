@@ -8,9 +8,9 @@ module sub_bytes (
     generate
         for (i = 0; i < 16; i = i + 1) begin : sbox_array
 
-            aes_sbox sbox_inst (
-                .data_in  (state_in[127 - 8*i -: 8]),
-                .data_out (state_out[127 - 8*i -: 8])
+            sbox sbox_inst (
+                .in  (state_in[127 - 8*i -: 8]),
+                .out (state_out[127 - 8*i -: 8])
             );
 
         end
