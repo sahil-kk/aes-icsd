@@ -1,69 +1,51 @@
 
 module mix_columns (
-    input  wire [7:0] state [0:3][0:3],
-    output reg  [7:0] state_out [0:3][0:3]
+    input  wire [127:0] state_in,
+    output wire [127:0] state_out
 );
 
-    // Temporary column arrays
-    reg [7:0] column_input [0:3];
-    reg [7:0] column_output [0:3];
-
-    integer col;
-
-    // Mix one column
-    task mix_single_column;
-        input  [7:0] col_in [0:3];
-        output [7:0] col_out [0:3];
-
-        reg [7:0] s0, s1, s2, s3;
-        reg [7:0] x0, x1, x2, x3;
-        reg [7:0] mul3_s0, mul3_s1, mul3_s2, mul3_s3;
-
-        begin
-            s0 = col_in[0];
-            s1 = col_in[1];
-            s2 = col_in[2];
-            s3 = col_in[3];
-
-            // Multiplication by 02
-            x0 = gf_xtime(s0);
-            x1 = gf_xtime(s1);
-            x2 = gf_xtime(s2);
-            x3 = gf_xtime(s3);
-
-            // Multiplication by 03
-            mul3_s0 = x0 ^ s0;
-            mul3_s1 = x1 ^ s1;
-            mul3_s2 = x2 ^ s2;
-            mul3_s3 = x3 ^ s3;
-
-            // MixColumns equations
-            col_out[0] = x0 ^ mul3_s1 ^ s2 ^ s3;
-            col_out[1] = s0 ^ x1 ^ mul3_s2 ^ s3;
-            col_out[2] = s0 ^ s1 ^ x2 ^ mul3_s3;
-            col_out[3] = mul3_s0 ^ s1 ^ s2 ^ x3;
-        end
-    endtask
-
-    // Apply MixColumns to all four columns
-    integer i;
-
-    always @(*) begin
-
-        for (col = 0; col < 4; col = col + 1) begin
-
-            column_input[0] = state[0][col];
-            column_input[1] = state[1][col];
-            column_input[2] = state[2][col];
-            column_input[3] = state[3][col];
-
-            mix_single_column(column_input, column_output);
-
-            for (i = 0; i < 4; i = i + 1) begin
-                state_out[i][col] = column_output[i];
-            end
-
-        end
+// GF(2^8) multiplication by 2
+function [7:0] gf_xtime;
+    input [7:0] b;
+    begin
+        gf_xtime = (b[7]) ? ((b << 1) ^ 8'h1b) : (b << 1);
     end
+endfunction
+
+// Extract individual columns
+wire [31:0] col0 = state_in[127:96];
+wire [31:0] col1 = state_in[95:64];
+wire [31:0] col2 = state_in[63:32];
+wire [31:0] col3 = state_in[31:0];
+
+// MixColumns function for one 32-bit column
+function [31:0] mix_single_column;
+    input [31:0] c;
+
+    reg [7:0] a0, a1, a2, a3;
+    reg [7:0] r0, r1, r2, r3;
+
+    begin
+        a0 = c[31:24];
+        a1 = c[23:16];
+        a2 = c[15:8];
+        a3 = c[7:0];
+
+        r0 = gf_xtime(a0) ^ (gf_xtime(a1) ^ a1) ^ a2 ^ a3;
+        r1 = a0 ^ gf_xtime(a1) ^ (gf_xtime(a2) ^ a2) ^ a3;
+        r2 = a0 ^ a1 ^ gf_xtime(a2) ^ (gf_xtime(a3) ^ a3);
+        r3 = (gf_xtime(a0) ^ a0) ^ a1 ^ a2 ^ gf_xtime(a3);
+
+        mix_single_column = {r0, r1, r2, r3};
+    end
+endfunction
+
+// Apply MixColumns independently to all four columns
+assign state_out = {
+    mix_single_column(col0),
+    mix_single_column(col1),
+    mix_single_column(col2),
+    mix_single_column(col3)
+};
 
 endmodule
