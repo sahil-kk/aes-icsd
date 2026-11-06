@@ -1,29 +1,290 @@
-
 module sbox (
     input wire [7:0] in,
     input wire mode,
     output reg [7:0] out
 );
 
-reg [7:0] sbox_table [0:255];
-reg [7:0] inv_sbox_table [0:255];
+// Forward AES S-Box
+function [7:0] forward_sbox;
+    input [7:0] addr;
+    begin
+        case (addr)
+            8'h00: forward_sbox=8'h63; 8'h01: forward_sbox=8'h7c;
+            8'h02: forward_sbox=8'h77; 8'h03: forward_sbox=8'h7b;
+            8'h04: forward_sbox=8'hf2; 8'h05: forward_sbox=8'h6b;
+            8'h06: forward_sbox=8'h6f; 8'h07: forward_sbox=8'hc5;
+            8'h08: forward_sbox=8'h30; 8'h09: forward_sbox=8'h01;
+            8'h0a: forward_sbox=8'h67; 8'h0b: forward_sbox=8'h2b;
+            8'h0c: forward_sbox=8'hfe; 8'h0d: forward_sbox=8'hd7;
+            8'h0e: forward_sbox=8'hab; 8'h0f: forward_sbox=8'h76;
+            8'h10: forward_sbox=8'hca; 8'h11: forward_sbox=8'h82;
+            8'h12: forward_sbox=8'hc9; 8'h13: forward_sbox=8'h7d;
+            8'h14: forward_sbox=8'hfa; 8'h15: forward_sbox=8'h59;
+            8'h16: forward_sbox=8'h47; 8'h17: forward_sbox=8'hf0;
+            8'h18: forward_sbox=8'had; 8'h19: forward_sbox=8'hd4;
+            8'h1a: forward_sbox=8'ha2; 8'h1b: forward_sbox=8'haf;
+            8'h1c: forward_sbox=8'h9c; 8'h1d: forward_sbox=8'ha4;
+            8'h1e: forward_sbox=8'h72; 8'h1f: forward_sbox=8'hc0;
+            8'h20: forward_sbox=8'hb7; 8'h21: forward_sbox=8'hfd;
+            8'h22: forward_sbox=8'h93; 8'h23: forward_sbox=8'h26;
+            8'h24: forward_sbox=8'h36; 8'h25: forward_sbox=8'h3f;
+            8'h26: forward_sbox=8'hf7; 8'h27: forward_sbox=8'hcc;
+            8'h28: forward_sbox=8'h34; 8'h29: forward_sbox=8'ha5;
+            8'h2a: forward_sbox=8'he5; 8'h2b: forward_sbox=8'hf1;
+            8'h2c: forward_sbox=8'h71; 8'h2d: forward_sbox=8'hd8;
+            8'h2e: forward_sbox=8'h31; 8'h2f: forward_sbox=8'h15;
+            8'h30: forward_sbox=8'h04; 8'h31: forward_sbox=8'hc7;
+            8'h32: forward_sbox=8'h23; 8'h33: forward_sbox=8'hc3;
+            8'h34: forward_sbox=8'h18; 8'h35: forward_sbox=8'h96;
+            8'h36: forward_sbox=8'h05; 8'h37: forward_sbox=8'h9a;
+            8'h38: forward_sbox=8'h07; 8'h39: forward_sbox=8'h12;
+            8'h3a: forward_sbox=8'h80; 8'h3b: forward_sbox=8'he2;
+            8'h3c: forward_sbox=8'heb; 8'h3d: forward_sbox=8'h27;
+            8'h3e: forward_sbox=8'hb2; 8'h3f: forward_sbox=8'h75;
+            8'h40: forward_sbox=8'h09; 8'h41: forward_sbox=8'h83;
+            8'h42: forward_sbox=8'h2c; 8'h43: forward_sbox=8'h1a;
+            8'h44: forward_sbox=8'h1b; 8'h45: forward_sbox=8'h6e;
+            8'h46: forward_sbox=8'h5a; 8'h47: forward_sbox=8'ha0;
+            8'h48: forward_sbox=8'h52; 8'h49: forward_sbox=8'h3b;
+            8'h4a: forward_sbox=8'hd6; 8'h4b: forward_sbox=8'hb3;
+            8'h4c: forward_sbox=8'h29; 8'h4d: forward_sbox=8'he3;
+            8'h4e: forward_sbox=8'h2f; 8'h4f: forward_sbox=8'h84;
+            8'h50: forward_sbox=8'h53; 8'h51: forward_sbox=8'hd1;
+            8'h52: forward_sbox=8'h00; 8'h53: forward_sbox=8'hed;
+            8'h54: forward_sbox=8'h20; 8'h55: forward_sbox=8'hfc;
+            8'h56: forward_sbox=8'hb1; 8'h57: forward_sbox=8'h5b;
+            8'h58: forward_sbox=8'h6a; 8'h59: forward_sbox=8'hcb;
+            8'h5a: forward_sbox=8'hbe; 8'h5b: forward_sbox=8'h39;
+            8'h5c: forward_sbox=8'h4a; 8'h5d: forward_sbox=8'h4c;
+            8'h5e: forward_sbox=8'h58; 8'h5f: forward_sbox=8'hcf;
+            8'h60: forward_sbox=8'hd0; 8'h61: forward_sbox=8'hef;
+            8'h62: forward_sbox=8'haa; 8'h63: forward_sbox=8'hfb;
+            8'h64: forward_sbox=8'h43; 8'h65: forward_sbox=8'h4d;
+            8'h66: forward_sbox=8'h33; 8'h67: forward_sbox=8'h85;
+            8'h68: forward_sbox=8'h45; 8'h69: forward_sbox=8'hf9;
+            8'h6a: forward_sbox=8'h02; 8'h6b: forward_sbox=8'h7f;
+            8'h6c: forward_sbox=8'h50; 8'h6d: forward_sbox=8'h3c;
+            8'h6e: forward_sbox=8'h9f; 8'h6f: forward_sbox=8'ha8;
+            8'h70: forward_sbox=8'h51; 8'h71: forward_sbox=8'ha3;
+            8'h72: forward_sbox=8'h40; 8'h73: forward_sbox=8'h8f;
+            8'h74: forward_sbox=8'h92; 8'h75: forward_sbox=8'h9d;
+            8'h76: forward_sbox=8'h38; 8'h77: forward_sbox=8'hf5;
+            8'h78: forward_sbox=8'hbc; 8'h79: forward_sbox=8'hb6;
+            8'h7a: forward_sbox=8'hda; 8'h7b: forward_sbox=8'h21;
+            8'h7c: forward_sbox=8'h10; 8'h7d: forward_sbox=8'hff;
+            8'h7e: forward_sbox=8'hf3; 8'h7f: forward_sbox=8'hd2;
+            8'h80: forward_sbox=8'hcd; 8'h81: forward_sbox=8'h0c;
+            8'h82: forward_sbox=8'h13; 8'h83: forward_sbox=8'hec;
+            8'h84: forward_sbox=8'h5f; 8'h85: forward_sbox=8'h97;
+            8'h86: forward_sbox=8'h44; 8'h87: forward_sbox=8'h17;
+            8'h88: forward_sbox=8'hc4; 8'h89: forward_sbox=8'ha7;
+            8'h8a: forward_sbox=8'h7e; 8'h8b: forward_sbox=8'h3d;
+            8'h8c: forward_sbox=8'h64; 8'h8d: forward_sbox=8'h5d;
+            8'h8e: forward_sbox=8'h19; 8'h8f: forward_sbox=8'h73;
+            8'h90: forward_sbox=8'h60; 8'h91: forward_sbox=8'h81;
+            8'h92: forward_sbox=8'h4f; 8'h93: forward_sbox=8'hdc;
+            8'h94: forward_sbox=8'h22; 8'h95: forward_sbox=8'h2a;
+            8'h96: forward_sbox=8'h90; 8'h97: forward_sbox=8'h88;
+            8'h98: forward_sbox=8'h46; 8'h99: forward_sbox=8'hee;
+            8'h9a: forward_sbox=8'hb8; 8'h9b: forward_sbox=8'h14;
+            8'h9c: forward_sbox=8'hde; 8'h9d: forward_sbox=8'h5e;
+            8'h9e: forward_sbox=8'h0b; 8'h9f: forward_sbox=8'hdb;
+            8'ha0: forward_sbox=8'he0; 8'ha1: forward_sbox=8'h32;
+            8'ha2: forward_sbox=8'h3a; 8'ha3: forward_sbox=8'h0a;
+            8'ha4: forward_sbox=8'h49; 8'ha5: forward_sbox=8'h06;
+            8'ha6: forward_sbox=8'h24; 8'ha7: forward_sbox=8'h5c;
+            8'ha8: forward_sbox=8'hc2; 8'ha9: forward_sbox=8'hd3;
+            8'haa: forward_sbox=8'hac; 8'hab: forward_sbox=8'h62;
+            8'hac: forward_sbox=8'h91; 8'had: forward_sbox=8'h95;
+            8'hae: forward_sbox=8'he4; 8'haf: forward_sbox=8'h79;
+            8'hb0: forward_sbox=8'he7; 8'hb1: forward_sbox=8'hc8;
+            8'hb2: forward_sbox=8'h37; 8'hb3: forward_sbox=8'h6d;
+            8'hb4: forward_sbox=8'h8d; 8'hb5: forward_sbox=8'hd5;
+            8'hb6: forward_sbox=8'h4e; 8'hb7: forward_sbox=8'ha9;
+            8'hb8: forward_sbox=8'h6c; 8'hb9: forward_sbox=8'h56;
+            8'hba: forward_sbox=8'hf4; 8'hbb: forward_sbox=8'hea;
+            8'hbc: forward_sbox=8'h65; 8'hbd: forward_sbox=8'h7a;
+            8'hbe: forward_sbox=8'hae; 8'hbf: forward_sbox=8'h08;
+            8'hc0: forward_sbox=8'hba; 8'hc1: forward_sbox=8'h78;
+            8'hc2: forward_sbox=8'h25; 8'hc3: forward_sbox=8'h2e;
+            8'hc4: forward_sbox=8'h1c; 8'hc5: forward_sbox=8'ha6;
+            8'hc6: forward_sbox=8'hb4; 8'hc7: forward_sbox=8'hc6;
+            8'hc8: forward_sbox=8'he8; 8'hc9: forward_sbox=8'hdd;
+            8'hca: forward_sbox=8'h74; 8'hcb: forward_sbox=8'h1f;
+            8'hcc: forward_sbox=8'h4b; 8'hcd: forward_sbox=8'hbd;
+            8'hce: forward_sbox=8'h8b; 8'hcf: forward_sbox=8'h8a;
+            8'hd0: forward_sbox=8'h70; 8'hd1: forward_sbox=8'h3e;
+            8'hd2: forward_sbox=8'hb5; 8'hd3: forward_sbox=8'h66;
+            8'hd4: forward_sbox=8'h48; 8'hd5: forward_sbox=8'h03;
+            8'hd6: forward_sbox=8'hf6; 8'hd7: forward_sbox=8'h0e;
+            8'hd8: forward_sbox=8'h61; 8'hd9: forward_sbox=8'h35;
+            8'hda: forward_sbox=8'h57; 8'hdb: forward_sbox=8'hb9;
+            8'hdc: forward_sbox=8'h86; 8'hdd: forward_sbox=8'hc1;
+            8'hde: forward_sbox=8'h1d; 8'hdf: forward_sbox=8'h9e;
+            8'he0: forward_sbox=8'he1; 8'he1: forward_sbox=8'hf8;
+            8'he2: forward_sbox=8'h98; 8'he3: forward_sbox=8'h11;
+            8'he4: forward_sbox=8'h69; 8'he5: forward_sbox=8'hd9;
+            8'he6: forward_sbox=8'h8e; 8'he7: forward_sbox=8'h94;
+            8'he8: forward_sbox=8'h9b; 8'he9: forward_sbox=8'h1e;
+            8'hea: forward_sbox=8'h87; 8'heb: forward_sbox=8'he9;
+            8'hec: forward_sbox=8'hce; 8'hed: forward_sbox=8'h55;
+            8'hee: forward_sbox=8'h28; 8'hef: forward_sbox=8'hdf;
+            8'hf0: forward_sbox=8'h8c; 8'hf1: forward_sbox=8'ha1;
+            8'hf2: forward_sbox=8'h89; 8'hf3: forward_sbox=8'h0d;
+            8'hf4: forward_sbox=8'hbf; 8'hf5: forward_sbox=8'he6;
+            8'hf6: forward_sbox=8'h42; 8'hf7: forward_sbox=8'h68;
+            8'hf8: forward_sbox=8'h41; 8'hf9: forward_sbox=8'h99;
+            8'hfa: forward_sbox=8'h2d; 8'hfb: forward_sbox=8'h0f;
+            8'hfc: forward_sbox=8'hb0; 8'hfd: forward_sbox=8'h54;
+            8'hfe: forward_sbox=8'hbb; 8'hff: forward_sbox=8'h16;
+            default: forward_sbox=8'h00;
+        endcase
+    end
+endfunction
 
-initial begin
-
-    // Forward S-Box
-    $readmemh("sbox.hex", sbox_table);
-
-    // Inverse S-Box
-    $readmemh("inv_sbox.hex", inv_sbox_table);
-
-end
+// Inverse AES S-Box
+function [7:0] inverse_sbox;
+    input [7:0] addr;
+    begin
+        case (addr)
+            8'h00: inverse_sbox=8'h52; 8'h01: inverse_sbox=8'h09;
+            8'h02: inverse_sbox=8'h6a; 8'h03: inverse_sbox=8'hd5;
+            8'h04: inverse_sbox=8'h30; 8'h05: inverse_sbox=8'h36;
+            8'h06: inverse_sbox=8'ha5; 8'h07: inverse_sbox=8'h38;
+            8'h08: inverse_sbox=8'hbf; 8'h09: inverse_sbox=8'h40;
+            8'h0a: inverse_sbox=8'ha3; 8'h0b: inverse_sbox=8'h9e;
+            8'h0c: inverse_sbox=8'h81; 8'h0d: inverse_sbox=8'hf3;
+            8'h0e: inverse_sbox=8'hd7; 8'h0f: inverse_sbox=8'hfb;
+            8'h10: inverse_sbox=8'h7c; 8'h11: inverse_sbox=8'he3;
+            8'h12: inverse_sbox=8'h39; 8'h13: inverse_sbox=8'h82;
+            8'h14: inverse_sbox=8'h9b; 8'h15: inverse_sbox=8'h2f;
+            8'h16: inverse_sbox=8'hff; 8'h17: inverse_sbox=8'h87;
+            8'h18: inverse_sbox=8'h34; 8'h19: inverse_sbox=8'h8e;
+            8'h1a: inverse_sbox=8'h43; 8'h1b: inverse_sbox=8'h44;
+            8'h1c: inverse_sbox=8'hc4; 8'h1d: inverse_sbox=8'hde;
+            8'h1e: inverse_sbox=8'he9; 8'h1f: inverse_sbox=8'hcb;
+            8'h20: inverse_sbox=8'h54; 8'h21: inverse_sbox=8'h7b;
+            8'h22: inverse_sbox=8'h94; 8'h23: inverse_sbox=8'h32;
+            8'h24: inverse_sbox=8'ha6; 8'h25: inverse_sbox=8'hc2;
+            8'h26: inverse_sbox=8'h23; 8'h27: inverse_sbox=8'h3d;
+            8'h28: inverse_sbox=8'hee; 8'h29: inverse_sbox=8'h4c;
+            8'h2a: inverse_sbox=8'h95; 8'h2b: inverse_sbox=8'h0b;
+            8'h2c: inverse_sbox=8'h42; 8'h2d: inverse_sbox=8'hfa;
+            8'h2e: inverse_sbox=8'hc3; 8'h2f: inverse_sbox=8'h4e;
+            8'h30: inverse_sbox=8'h08; 8'h31: inverse_sbox=8'h2e;
+            8'h32: inverse_sbox=8'ha1; 8'h33: inverse_sbox=8'h66;
+            8'h34: inverse_sbox=8'h28; 8'h35: inverse_sbox=8'hd9;
+            8'h36: inverse_sbox=8'h24; 8'h37: inverse_sbox=8'hb2;
+            8'h38: inverse_sbox=8'h76; 8'h39: inverse_sbox=8'h5b;
+            8'h3a: inverse_sbox=8'ha2; 8'h3b: inverse_sbox=8'h49;
+            8'h3c: inverse_sbox=8'h6d; 8'h3d: inverse_sbox=8'h8b;
+            8'h3e: inverse_sbox=8'hd1; 8'h3f: inverse_sbox=8'h25;
+            8'h40: inverse_sbox=8'h72; 8'h41: inverse_sbox=8'hf8;
+            8'h42: inverse_sbox=8'hf6; 8'h43: inverse_sbox=8'h64;
+            8'h44: inverse_sbox=8'h86; 8'h45: inverse_sbox=8'h68;
+            8'h46: inverse_sbox=8'h98; 8'h47: inverse_sbox=8'h16;
+            8'h48: inverse_sbox=8'hd4; 8'h49: inverse_sbox=8'ha4;
+            8'h4a: inverse_sbox=8'h5c; 8'h4b: inverse_sbox=8'hcc;
+            8'h4c: inverse_sbox=8'h5d; 8'h4d: inverse_sbox=8'h65;
+            8'h4e: inverse_sbox=8'hb6; 8'h4f: inverse_sbox=8'h92;
+            8'h50: inverse_sbox=8'h6c; 8'h51: inverse_sbox=8'h70;
+            8'h52: inverse_sbox=8'h48; 8'h53: inverse_sbox=8'h50;
+            8'h54: inverse_sbox=8'hfd; 8'h55: inverse_sbox=8'hed;
+            8'h56: inverse_sbox=8'hb9; 8'h57: inverse_sbox=8'hda;
+            8'h58: inverse_sbox=8'h5e; 8'h59: inverse_sbox=8'h15;
+            8'h5a: inverse_sbox=8'h46; 8'h5b: inverse_sbox=8'h57;
+            8'h5c: inverse_sbox=8'ha7; 8'h5d: inverse_sbox=8'h8d;
+            8'h5e: inverse_sbox=8'h9d; 8'h5f: inverse_sbox=8'h84;
+            8'h60: inverse_sbox=8'h90; 8'h61: inverse_sbox=8'hd8;
+            8'h62: inverse_sbox=8'hab; 8'h63: inverse_sbox=8'h00;
+            8'h64: inverse_sbox=8'h8c; 8'h65: inverse_sbox=8'hbc;
+            8'h66: inverse_sbox=8'hd3; 8'h67: inverse_sbox=8'h0a;
+            8'h68: inverse_sbox=8'hf7; 8'h69: inverse_sbox=8'he4;
+            8'h6a: inverse_sbox=8'h58; 8'h6b: inverse_sbox=8'h05;
+            8'h6c: inverse_sbox=8'hb8; 8'h6d: inverse_sbox=8'hb3;
+            8'h6e: inverse_sbox=8'h45; 8'h6f: inverse_sbox=8'h06;
+            8'h70: inverse_sbox=8'hd0; 8'h71: inverse_sbox=8'h2c;
+            8'h72: inverse_sbox=8'h1e; 8'h73: inverse_sbox=8'h8f;
+            8'h74: inverse_sbox=8'hca; 8'h75: inverse_sbox=8'h3f;
+            8'h76: inverse_sbox=8'h0f; 8'h77: inverse_sbox=8'h02;
+            8'h78: inverse_sbox=8'hc1; 8'h79: inverse_sbox=8'haf;
+            8'h7a: inverse_sbox=8'hbd; 8'h7b: inverse_sbox=8'h03;
+            8'h7c: inverse_sbox=8'h01; 8'h7d: inverse_sbox=8'h13;
+            8'h7e: inverse_sbox=8'h8a; 8'h7f: inverse_sbox=8'h6b;
+            8'h80: inverse_sbox=8'h3a; 8'h81: inverse_sbox=8'h91;
+            8'h82: inverse_sbox=8'h11; 8'h83: inverse_sbox=8'h41;
+            8'h84: inverse_sbox=8'h4f; 8'h85: inverse_sbox=8'h67;
+            8'h86: inverse_sbox=8'hdc; 8'h87: inverse_sbox=8'hea;
+            8'h88: inverse_sbox=8'h97; 8'h89: inverse_sbox=8'hf2;
+            8'h8a: inverse_sbox=8'hcf; 8'h8b: inverse_sbox=8'hce;
+            8'h8c: inverse_sbox=8'hf0; 8'h8d: inverse_sbox=8'hb4;
+            8'h8e: inverse_sbox=8'he6; 8'h8f: inverse_sbox=8'h73;
+            8'h90: inverse_sbox=8'h96; 8'h91: inverse_sbox=8'hac;
+            8'h92: inverse_sbox=8'h74; 8'h93: inverse_sbox=8'h22;
+            8'h94: inverse_sbox=8'he7; 8'h95: inverse_sbox=8'had;
+            8'h96: inverse_sbox=8'h35; 8'h97: inverse_sbox=8'h85;
+            8'h98: inverse_sbox=8'he2; 8'h99: inverse_sbox=8'hf9;
+            8'h9a: inverse_sbox=8'h37; 8'h9b: inverse_sbox=8'he8;
+            8'h9c: inverse_sbox=8'h1c; 8'h9d: inverse_sbox=8'h75;
+            8'h9e: inverse_sbox=8'hdf; 8'h9f: inverse_sbox=8'h6e;
+            8'ha0: inverse_sbox=8'h47; 8'ha1: inverse_sbox=8'hf1;
+            8'ha2: inverse_sbox=8'h1a; 8'ha3: inverse_sbox=8'h71;
+            8'ha4: inverse_sbox=8'h1d; 8'ha5: inverse_sbox=8'h29;
+            8'ha6: inverse_sbox=8'hc5; 8'ha7: inverse_sbox=8'h89;
+            8'ha8: inverse_sbox=8'h6f; 8'ha9: inverse_sbox=8'hb7;
+            8'haa: inverse_sbox=8'h62; 8'hab: inverse_sbox=8'h0e;
+            8'hac: inverse_sbox=8'haa; 8'had: inverse_sbox=8'h18;
+            8'hae: inverse_sbox=8'hbe; 8'haf: inverse_sbox=8'h1b;
+            8'hb0: inverse_sbox=8'hfc; 8'hb1: inverse_sbox=8'h56;
+            8'hb2: inverse_sbox=8'h3e; 8'hb3: inverse_sbox=8'h4b;
+            8'hb4: inverse_sbox=8'hc6; 8'hb5: inverse_sbox=8'hd2;
+            8'hb6: inverse_sbox=8'h79; 8'hb7: inverse_sbox=8'h20;
+            8'hb8: inverse_sbox=8'h9a; 8'hb9: inverse_sbox=8'hdb;
+            8'hba: inverse_sbox=8'hc0; 8'hbb: inverse_sbox=8'hfe;
+            8'hbc: inverse_sbox=8'h78; 8'hbd: inverse_sbox=8'hcd;
+            8'hbe: inverse_sbox=8'h5a; 8'hbf: inverse_sbox=8'hf4;
+            8'hc0: inverse_sbox=8'h1f; 8'hc1: inverse_sbox=8'hdd;
+            8'hc2: inverse_sbox=8'ha8; 8'hc3: inverse_sbox=8'h33;
+            8'hc4: inverse_sbox=8'h88; 8'hc5: inverse_sbox=8'h07;
+            8'hc6: inverse_sbox=8'hc7; 8'hc7: inverse_sbox=8'h31;
+            8'hc8: inverse_sbox=8'hb1; 8'hc9: inverse_sbox=8'h12;
+            8'hca: inverse_sbox=8'h10; 8'hcb: inverse_sbox=8'h59;
+            8'hcc: inverse_sbox=8'h27; 8'hcd: inverse_sbox=8'h80;
+            8'hce: inverse_sbox=8'hec; 8'hcf: inverse_sbox=8'h5f;
+            8'hd0: inverse_sbox=8'h60; 8'hd1: inverse_sbox=8'h51;
+            8'hd2: inverse_sbox=8'h7f; 8'hd3: inverse_sbox=8'ha9;
+            8'hd4: inverse_sbox=8'h19; 8'hd5: inverse_sbox=8'hb5;
+            8'hd6: inverse_sbox=8'h4a; 8'hd7: inverse_sbox=8'h0d;
+            8'hd8: inverse_sbox=8'h2d; 8'hd9: inverse_sbox=8'he5;
+            8'hda: inverse_sbox=8'h7a; 8'hdb: inverse_sbox=8'h9f;
+            8'hdc: inverse_sbox=8'h93; 8'hdd: inverse_sbox=8'hc9;
+            8'hde: inverse_sbox=8'h9c; 8'hdf: inverse_sbox=8'hef;
+            8'he0: inverse_sbox=8'ha0; 8'he1: inverse_sbox=8'he0;
+            8'he2: inverse_sbox=8'h3b; 8'he3: inverse_sbox=8'h4d;
+            8'he4: inverse_sbox=8'hae; 8'he5: inverse_sbox=8'h2a;
+            8'he6: inverse_sbox=8'hf5; 8'he7: inverse_sbox=8'hb0;
+            8'he8: inverse_sbox=8'hc8; 8'he9: inverse_sbox=8'heb;
+            8'hea: inverse_sbox=8'hbb; 8'heb: inverse_sbox=8'h3c;
+            8'hec: inverse_sbox=8'h83; 8'hed: inverse_sbox=8'h53;
+            8'hee: inverse_sbox=8'h99; 8'hef: inverse_sbox=8'h61;
+            8'hf0: inverse_sbox=8'h17; 8'hf1: inverse_sbox=8'h2b;
+            8'hf2: inverse_sbox=8'h04; 8'hf3: inverse_sbox=8'h7e;
+            8'hf4: inverse_sbox=8'hba; 8'hf5: inverse_sbox=8'h77;
+            8'hf6: inverse_sbox=8'hd6; 8'hf7: inverse_sbox=8'h26;
+            8'hf8: inverse_sbox=8'he1; 8'hf9: inverse_sbox=8'h69;
+            8'hfa: inverse_sbox=8'h14; 8'hfb: inverse_sbox=8'h63;
+            8'hfc: inverse_sbox=8'h55; 8'hfd: inverse_sbox=8'h21;
+            8'hfe: inverse_sbox=8'h0c; 8'hff: inverse_sbox=8'h7d;
+            default: inverse_sbox=8'h00;
+        endcase
+    end
+endfunction
 
 always @(*) begin
-    if (mode == 1'b0)
-        out = sbox_table[in];
-    else
-        out = inv_sbox_table[in];
+    case (mode)
+        1'b1: out = inverse_sbox(in);
+        default: out = forward_sbox(in);
+    endcase
 end
 
 endmodule
-
