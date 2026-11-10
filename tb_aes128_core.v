@@ -37,6 +37,10 @@ module tb_aes128_core;
     end
 
     initial begin
+
+        $dumpfile("aes_wave.vcd");
+        $dumpvars(0, tb_aes128_core);
+        
         // FIPS-197 Appendix C.1 AES-128 example.
         plaintext          = 128'h00112233445566778899aabbccddeeff;
         key                = 128'h000102030405060708090a0b0c0d0e0f;
@@ -58,8 +62,9 @@ module tb_aes128_core;
         start = 1'b0;
 
         // Wait for completion, with a timeout to catch an FSM hang.
-        while (done !== 1'b1 && cycle_count < 20) begin
-            @(posedge clk);
+        // Sample on negedge clk to safely catch the 1-cycle done pulse.
+        while (done !== 1'b1 && cycle_count < 30) begin
+            @(negedge clk);
             cycle_count = cycle_count + 1;
         end
 

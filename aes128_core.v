@@ -290,55 +290,9 @@ module aes128_core (
         xtime = {a[6:0], 1'b0} ^ (a[7] ? 8'h1b : 8'h00);
     endfunction
 
-    function [127:0] sub_bytes;
-        input [127:0] s;
-        reg [127:0] t;
-        integer i;
-        begin
-            for (i = 0; i < 16; i = i + 1)
-                t[127-(8*i) -: 8] = sbox(s[127-(8*i) -: 8]);
-            sub_bytes = t;
-        end
-    endfunction
 
     // AES ShiftRows. State bytes are packed column-by-column.
-    function [127:0] shift_rows;
-        input [127:0] s;
-        reg [127:0] t;
-        integer r, c, src_c, dst_idx, src_idx;
-        begin
-            for (c = 0; c < 4; c = c + 1) begin
-                for (r = 0; r < 4; r = r + 1) begin
-                    src_c = (c + r) % 4;
-                    dst_idx = 4*c + r;
-                    src_idx = 4*src_c + r;
-                    t[127-(8*dst_idx) -: 8] = s[127-(8*src_idx) -: 8];
-                end
-            end
-            shift_rows = t;
-        end
-    endfunction
 
-    function [127:0] mix_columns;
-        input [127:0] s;
-        reg [127:0] t;
-        reg [7:0] a0, a1, a2, a3;
-        integer c, idx;
-        begin
-            for (c = 0; c < 4; c = c + 1) begin
-                idx = 4*c;
-                a0 = s[127-(8*(idx+0)) -: 8];
-                a1 = s[127-(8*(idx+1)) -: 8];
-                a2 = s[127-(8*(idx+2)) -: 8];
-                a3 = s[127-(8*(idx+3)) -: 8];
-                t[127-(8*(idx+0)) -: 8] = xtime(a0) ^ (xtime(a1) ^ a1) ^ a2 ^ a3;
-                t[127-(8*(idx+1)) -: 8] = a0 ^ xtime(a1) ^ (xtime(a2) ^ a2) ^ a3;
-                t[127-(8*(idx+2)) -: 8] = a0 ^ a1 ^ xtime(a2) ^ (xtime(a3) ^ a3);
-                t[127-(8*(idx+3)) -: 8] = (xtime(a0) ^ a0) ^ a1 ^ a2 ^ xtime(a3);
-            end
-            mix_columns = t;
-        end
-    endfunction
 
     function [31:0] sub_word;
         input [31:0] w;
@@ -381,15 +335,42 @@ module aes128_core (
         end
     endfunction
 
-    reg [127:0] round_key_next;
-    reg [127:0] sub_shift_state;
-    reg [127:0] mixed_state;
+ 
+    wire [127:0] sub_bytes_out;
+    wire [127:0] shift_rows_out;
+    wire [127:0] mix_columns_out;
+    wire [127:0] round_key_next;
+    wire [127:0] ark_state_in;
+    wire [127:0] ark_state_out;
 
-    always @* begin
-        round_key_next = next_round_key(round_key_reg, round_num);
-        sub_shift_state = shift_rows(sub_bytes(state_reg));
-        mixed_state = mix_columns(sub_shift_state);
-    end
+    assign round_key_next = next_round_key(round_key_reg, round_num);
+    assign ark_state_in = (fsm_state == FINAL_ROUND)
+                        ? shift_rows_out : mix_columns_out;
+
+    // 1. SubBytes 
+    sub_bytes u_sub_bytes (
+        .state_in  (state_reg),
+        .state_out (sub_bytes_out)
+    );
+
+    // 2. ShiftRows 
+    shift_rows u_shift_rows (
+        .state_in  (sub_bytes_out),
+        .state_out (shift_rows_out)
+    );
+
+    // 3. MixColumns 
+    mix_columns u_mix_columns (
+        .state_in  (shift_rows_out),
+        .state_out (mix_columns_out)
+    );
+
+    // 4. AddRoundKey 
+    add_round_key u_add_round_key (
+        .state_in  (ark_state_in),
+        .round_key (round_key_next),
+        .state_out (ark_state_out)
+    );
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -416,7 +397,7 @@ module aes128_core (
 
                 MAIN_ROUNDS: begin
                     // Rounds 1 through 9: SubBytes, ShiftRows, MixColumns, AddRoundKey.
-                    state_reg     <= mixed_state ^ round_key_next;
+                    state_reg     <= ark_state_out;
                     round_key_reg <= round_key_next;
                     if (round_num == 4'd9) begin
                         round_num <= 4'd10;
@@ -428,8 +409,8 @@ module aes128_core (
 
                 FINAL_ROUND: begin
                     // Round 10 omits MixColumns.
-                    ciphertext   <= sub_shift_state ^ round_key_next;
-                    state_reg     <= sub_shift_state ^ round_key_next;
+                    ciphertext   <= ark_state_out;
+                    state_reg     <= ark_state_out;
                     round_key_reg<= round_key_next;
                     busy         <= 1'b0;
                     done         <= 1'b1;
